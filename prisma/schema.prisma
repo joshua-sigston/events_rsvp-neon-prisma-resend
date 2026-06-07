@@ -1,0 +1,68 @@
+// App data models for the RSVP system.
+// User accounts are managed by Neon Auth (neon_auth schema) — not defined here.
+// App records link to auth users via hostId (the Neon Auth user.id from the session).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Guest's answer when responding to an invitation.
+enum AttendanceStatus {
+  ATTENDING     // Yes, they will attend
+  NOT_ATTENDING // No, they will not attend
+  MAYBE         // Uncertain — may still attend
+}
+
+// An event created by a host. Hosts must be authenticated via Neon Auth.
+model Event {
+  id          String   @id @default(cuid())
+  hostId      String   // Neon Auth user.id of the event creator
+  title       String
+  description String?
+  location    String
+  eventDate   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // One event has many guest invitations
+  invitations Invitation[]
+
+  @@index([hostId])
+}
+
+// A single guest invite for an event. Each guest gets a unique token
+// for the public RSVP link (/rsvp/[token]) — no account required to respond.
+model Invitation {
+  id         String    @id @default(cuid())
+  eventId    String
+  event      Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guestEmail String    // Email the invite was sent to
+  guestName  String?   // Optional display name for the guest
+  token      String    @unique @default(cuid()) // Secret link token for public RSVP page
+  sentAt     DateTime? // When the invitation email was sent (null if not yet sent)
+  createdAt  DateTime  @default(now())
+
+  // Optional — populated once the guest submits their RSVP
+  response RsvpResponse?
+
+  // One invite per email address per event
+  @@unique([eventId, guestEmail])
+  @@index([token])
+}
+
+// A guest's RSVP answer. One response per invitation; guests can update
+// their answer by submitting the form again (upsert on invitationId).
+model RsvpResponse {
+  id           String           @id @default(cuid())
+  invitationId String           @unique
+  invitation   Invitation       @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  status       AttendanceStatus
+  guestCount   Int              @default(1) // Number of people attending (0 when NOT_ATTENDING)
+  message      String?          // Optional note from the guest
+  respondedAt  DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
