@@ -1,6 +1,6 @@
 # RSVP App — Build Plan & Instructions
 
-A step-by-step guide to building an event RSVP application with **Next.js**, **Neon + Neon Auth**, **Prisma**, **Resend**, **ShadCN UI**, and **React Hook Form + Zod**.
+A step-by-step guide to building an event RSVP application with **Next.js**, **Neon `+ Neon Auth**, **Prisma**, **Resend**, **ShadCN UI**, and **React Hook Form + Zod**.
 
 ---
 
